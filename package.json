@@ -1,0 +1,16 @@
+{
+  "name": "com.vklubkov.march31st",
+  "version": "1.0.0",
+  "displayName": "March 31st",
+  "description": "Reads the 'Assets_being_removed_March_31st.pdf' file provided by Unity and compares to the list of your purchased Assets.",
+  "unity": "6000.3",
+  "license": "MIT",
+  "licensesUrl": "https://github.com/vklubkov/March31st?tab=MIT-1-ov-file",
+  "changelogUrl": "https://github.com/vklubkov/March31st/releases",
+  "documentationUrl": "https://github.com/vklubkov/March31st",
+  "author": {
+    "name": "Vladimir Klubkov",
+    "email": "vladimir.gamedev@gmail.com",
+    "url": "https://github.com/vklubkov"
+  }
+}
