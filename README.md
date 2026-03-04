@@ -12,7 +12,13 @@ This tool helps you compare the aforementioned list with your purchased Assets.
 
 Open the Unity Package Manager, click the plus button, select `Add package from git URL...` and paste `https://github.com/vklubkov/March31st.git` (or `git@github.com:vklubkov/March31st.git` if you are using SSH)
 
-Use `Tools -> March 31st..` and install the dependencies (Unity will throw few popups at you during this process, you have to manually get rid of them).
+Use `Tools -> March 31st..` and install the dependencies (Unity will throw few popups at you during this process, you have to manually get rid of them). 
+
+Installed dependecies are:
+- [NuGetForUnity](https://github.com/GlitchEnzo/NuGetForUnity)
+- [Tabula](https://www.nuget.org/packages/Tabula)
+- [UglyToad.PdfPig](https://www.nuget.org/packages/PdfPig/)
+- [Microsoft.Bcl.HashCode](https://www.nuget.org/packages/Microsoft.Bcl.HashCode/)
 
 After the compilation is finished, you will see the window similar to the screenshot above, but with empty table.
 
