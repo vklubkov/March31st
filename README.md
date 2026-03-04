@@ -6,14 +6,37 @@ See [the Unity Discussions thread](https://discussions.unity.com/t/a-notice-for-
 
 This tool helps you compare the aforementioned list with your purchased Assets.
 
+![screenshot](.github/screenshot.png)
+
+## How to use
+
+Open the Unity Package Manager, click the plus button, select `Add package from git URL...` and paste `https://github.com/vklubkov/March31st.git` (or `git@github.com:vklubkov/March31st.git` if you are using SSH)
+
+Use `Tools -> March 31st..` and install the dependencies (Unity will throw few popups at you during this process, you have to manually get rid them)
+
+After the compilation is finished, you will see the window similar to the screenshot above, but with empty table.
+
+Specify the path to the pdf file, press `Parse PDF, fetch Purchases, and compare` and wait for it to finish.
+
+The table will contain the list of affected assets you have purchased.
+
+Assets purchased within last 6 months will have the watch icon displayed.
+
+## Complete uninstall
+
+1. Remove `March31st` using Unity Package Manager.
+2. Go to `Player Settings -> Player -> Other Settings -> Scripting Define Symbols` and remove `MARCH31ST_TABULA_AVAILABLE`. Don't forget to click `Apply`.
+3. Go to `NuGet -> Manage NuGet Packages` and uninstall `Tabula`.
+4. Remove `NuGetForUnity` using Unity Package Manager.
+5. Go to `Player Settings -> Package Manager -> Scoped Registires` and remove the `package.openupm.com` registry. Or, if you are using it in your project, remove the `com.github-glitchenzo.nugetforunity` scope from it.
+
 ## AI use disclosure
 
-I used AI agent to generate the code, then manually fixed the issues, and then used the agent to reorganize the code under my control.
+I used an AI agent to generate the main window, the pdf parser and the purchases fetcher. Then, I used specialized prompts to improve the window and the fetcher. Plus some manual changes to them. Pdf parser was rewritten manually. The rest of the code is written by me.
 
 ## LICENSE
 
 [MIT](LICENSE.md)
-
 
 ```
 MIT License
@@ -37,5 +60,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
 ```
+
+Installed tools are not included in this repo, but I selected those that have permissive (MIT and Apache 2.0) licenses.
