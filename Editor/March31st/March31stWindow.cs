@@ -21,9 +21,10 @@ namespace March31st {
         CancellationTokenSource _cancellationTokenSource;
 
         VisualElement _root;
-        Label _statusLabel;
-        Button _loadButton;
+        Button _installButton;
         TextField _pdfPathField;
+        Button _loadButton;
+        Label _statusLabel;
         MultiColumnListView _listView;
 
         [MenuItem("Tools/March 31st...")]
@@ -32,7 +33,7 @@ namespace March31st {
         public void CreateGUI() {
             _root = rootVisualElement;
 
-            var mainTitle = new Label("March 31st Asset Checker");
+            var mainTitle = new Label("March 31st Removed Assets Checker");
             mainTitle.style.unityFontStyleAndWeight = FontStyle.Bold;
             mainTitle.style.fontSize = 14;
             mainTitle.style.marginBottom = 10;
@@ -40,6 +41,7 @@ namespace March31st {
             mainTitle.style.marginLeft = 5;
             _root.Add(mainTitle);
 
+#if MARCH31ST_TABULA_AVAILABLE
             _pdfPathField = new TextField("Pdf Path");
             _pdfPathField.style.marginLeft = 5;
             _pdfPathField.style.marginRight = 5;
@@ -47,7 +49,7 @@ namespace March31st {
             _pdfPathField.value = GetDefaultPdfPath();
             _root.Add(_pdfPathField);
 
-            _loadButton = new Button(RunCheck) { text = "Load PDF and Fetch My Assets", style = { height = 30 } };
+            _loadButton = new Button(RunCheck) { text = "Parse PDF, fetch Purchases, and compare", style = { height = 30 } };
             _root.Add(_loadButton);
 
             _statusLabel = new Label($"Status: {_status}") { style = { marginLeft = 5, marginTop = 5, marginBottom = 5 } };
@@ -135,7 +137,15 @@ namespace March31st {
             });
 
             _root.Add(_listView);
+#else
+            _installButton = new Button(Install);
+            _installButton.text = "Install NuGetForUnity, Tabula, UglyToad.PdfPig and Microsoft.Bcl.HashCode";
+            _installButton.style.height = 30;
+            _root.Add(_installButton);
+#endif
         }
+
+        void Install() => Survivor.InstallDependencies();
 
         void OnEnable() {
             _cancellationTokenSource = new CancellationTokenSource();
@@ -160,13 +170,18 @@ namespace March31st {
                 _loadButton.SetEnabled(false);
                 UpdateStatus("Reading PDF...");
 
+#if MARCH31ST_TABULA_AVAILABLE
                 _pdfAssets = await PdfParser.LoadPdfContentsAsync(_pdfPathField.value, _cancellationTokenSource.Token);
                 UpdateStatus($"PDF read. Found {_pdfAssets.Count} entries. Fetching my assets...");
 
-                _myAssets = await PurchasesFetcher.FetchMyAssets(_cancellationTokenSource.Token, UpdateStatus);
-                UpdateStatus($"My assets fetched ({_myAssets.Count}). Comparing...");
+                if (_pdfAssets.Count != 0) {
+                    _myAssets = await PurchasesFetcher.FetchMyAssets(_cancellationTokenSource.Token, UpdateStatus);
+                    UpdateStatus($"My assets fetched ({_myAssets.Count}). Comparing...");
 
-                CompareAssets();
+                    CompareAssets();
+                }
+#endif
+
                 UpdateStatus($"Done. Found {_matchedAssets.Count} matches.");
 
                 _listView.Rebuild();

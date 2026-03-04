@@ -1,11 +1,12 @@
-using System;
+#if MARCH31ST_TABULA_AVAILABLE
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Tabula;
+using Tabula.Extractors;
 using UnityEngine;
+using UglyToad.PdfPig;
 
 namespace March31st {
     public static class PdfParser {
@@ -23,45 +24,38 @@ namespace March31st {
 
         private static List<AssetInfo> LoadPdfContents(string pdfPath) {
             var list = new List<AssetInfo>();
-            var process = new Process();
-            process.StartInfo.FileName = "pdftotext";
-            process.StartInfo.Arguments = $"\"{pdfPath}\" -";
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            process.Start();
+            using var document = PdfDocument.Open(pdfPath, new ParsingOptions { ClipPaths = true });
+            for (var i = 1; i <= document.NumberOfPages; i++) {
+                var page = ObjectExtractor.Extract(document, i);
+                IExtractionAlgorithm ea = new SpreadsheetExtractionAlgorithm();
+                var tables = ea.Extract(page);
+                var table = tables[0];
+                var rows = table.Rows;
+                foreach (var row in rows) {
+                    var cellsInRow = row.Count;
+                    if (cellsInRow != 2)
+                        continue;
 
-            var output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-
-            var lines = output.Split(new[] { "\n", "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(l => l.Trim())
-                .Where(l => !string.IsNullOrEmpty(l))
-                .ToList();
-
-            // The structure starts with ASSET, PUBLISHER
-            var startIdx = -1;
-            for (var i = 0; i < lines.Count - 1; i++) {
-                if (lines[i].Equals("ASSET", StringComparison.OrdinalIgnoreCase) &&
-                    lines[i + 1].Equals("PUBLISHER", StringComparison.OrdinalIgnoreCase)) {
-                    startIdx = i + 2;
-                    break;
-                }
-            }
-
-            if (startIdx != -1) {
-                for (var i = startIdx; i < lines.Count - 1; i += 2) {
-                    list.Add(new AssetInfo { _name = lines[i], _publisher = lines[i + 1] });
-                }
-            }
-            else if (lines.Count > 0) {
-                // Fallback: try to guess if it's pairs from the beginning if no header found
-                for (var i = 0; i < lines.Count - 1; i += 2) {
-                    list.Add(new AssetInfo { _name = lines[i], _publisher = lines[i + 1] });
+                    AddInfo(list, row[0].GetText(), row[1].GetText());
                 }
             }
 
             return list;
         }
+
+        static void AddInfo(List<AssetInfo> list, string name, string publisher) {
+            if (name == null && publisher == null)
+                return;
+
+            if (name == "" && publisher == "")
+                return;
+
+            if (name == "A S S E T" && publisher == "P U B L I S H E R")
+                return;
+
+            list.Add(new AssetInfo { _name = name, _publisher = publisher });
+        }
+
     }
 }
+#endif

@@ -10,7 +10,10 @@
   "documentationUrl": "https://github.com/vklubkov/March31st",
   "author": {
     "name": "Vladimir Klubkov",
-    "email": "vladimir.gamedev@gmail.com",
-    "url": "https://github.com/vklubkov"
+    "url": "https://github.com/vklubkov",
+    "email": "vladimir.gamedev@gmail.com"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.2"
   }
 }
