@@ -20,6 +20,9 @@ Installed dependecies are:
 - [UglyToad.PdfPig](https://www.nuget.org/packages/PdfPig/)
 - [Microsoft.Bcl.HashCode](https://www.nuget.org/packages/Microsoft.Bcl.HashCode/)
 
+*You can also install them manually using the Unity Package Manager for installing NuGetForUnity and then NuGetForUnity itself.
+After that, add `MARCH31ST_TABULA_AVAILABLE` to `Player Settings -> Player -> Other Settings -> Scripting Define Symbols`.*
+
 After the compilation is finished, you will see the window similar to the screenshot above, but with empty table.
 
 Specify the path to the pdf file, press `Parse PDF, fetch Purchases, and compare` and wait for it to finish.
