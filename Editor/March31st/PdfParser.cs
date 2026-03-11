@@ -44,7 +44,7 @@ namespace March31st {
         }
 
         static void AddInfo(List<AssetInfo> list, string name, string publisher) {
-            if (name == null && publisher == null)
+            if (name == null || publisher == null)
                 return;
 
             if (name == "" && publisher == "")
@@ -53,9 +53,29 @@ namespace March31st {
             if (name == "A S S E T" && publisher == "P U B L I S H E R")
                 return;
 
-            list.Add(new AssetInfo { _name = name, _publisher = publisher });
-        }
+            var sanitizedName = name
+                .Replace(" ", "")
+                .Replace("_", "")
+                .Replace("\t", "")
+                .Replace("\r", "")
+                .Replace("\n", "")
+                .Replace(",", "");
 
+            var sanitizedPublisher = publisher
+                .Replace("\r\n", " ")
+                .Replace('\n', ' ')
+                .Replace('\r', ' ')
+                .Trim(' ')
+                .Trim('_')
+                .Trim(' ')
+                .Replace(",", "");
+
+            list.Add(new AssetInfo {
+                _name = sanitizedName,
+                _sanitizedName = sanitizedName,
+                _sanitizedPublisher = sanitizedPublisher
+            });
+        }
     }
 }
 #endif

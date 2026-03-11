@@ -63,6 +63,13 @@ namespace March31st {
 
                 list.Add(new AssetInfo {
                     _name = displayName,
+                    _sanitizedName = displayName
+                        .Replace(" ", "")
+                        .Replace("_", "")
+                        .Replace("\t", "")
+                        .Replace("\r", "")
+                        .Replace("\n", "")
+                        .Replace(",", ""),
                     _purchaseDate = grantTime,
                     _link = $"https://assetstore.unity.com/packages/slug/{packageIdS}"
                 });
