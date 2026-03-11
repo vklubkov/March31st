@@ -40,6 +40,7 @@ namespace March31st {
             rootPanel.style.marginTop = 10;
             rootPanel.style.marginLeft = 10;
             rootPanel.style.marginRight = 10;
+            _root.Add(rootPanel);
 
             var mainTitle = new Label("March 31st Removed Assets Checker");
             mainTitle.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -99,8 +100,6 @@ namespace March31st {
             _statusLabel = new Label($"Status: {_status}");
             _statusLabel.style.marginBottom = 5;
             rootPanel.Add(_statusLabel);
-
-            _root.Add(rootPanel);
 
             _listView = new MultiColumnListView();
             _listView.itemsSource = _matchedAssets;
