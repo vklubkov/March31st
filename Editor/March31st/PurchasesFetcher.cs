@@ -55,13 +55,14 @@ namespace March31st {
             var parts = json.Split(new[] { "{\"id\":" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var part in parts) {
                 var displayName = GetStringValue(part, "displayName");
-                var packageIdS = GetStringValue(part, "packageId", false);
+                var packageId = GetStringValue(part, "packageId", false);
                 var grantTime = GetStringValue(part, "grantTime");
 
-                if (string.IsNullOrEmpty(displayName) || !int.TryParse(packageIdS, out _))
+                if (string.IsNullOrEmpty(displayName) || !int.TryParse(packageId, out _))
                     continue;
 
                 list.Add(new AssetInfo {
+                    _packageId = packageId,
                     _name = displayName,
                     _sanitizedName = displayName
                         .Replace(" ", "")
@@ -71,11 +72,32 @@ namespace March31st {
                         .Replace("\n", "")
                         .Replace(",", ""),
                     _purchaseDate = grantTime,
-                    _link = $"https://assetstore.unity.com/packages/slug/{packageIdS}"
+                    _link = $"https://assetstore.unity.com/packages/slug/{packageId}"
                 });
             }
 
             return (list, totalPurchases);
+        }
+
+        public static async Awaitable<string> FetchPublisher(string packageId, CancellationToken cancellationToken) {
+            var url = $"https://packages-v2.unity.com/-/api/product/{packageId}";
+            var token = CloudProjectSettings.accessToken;
+            using var request = UnityWebRequest.Get(url);
+            request.SetRequestHeader("Authorization", $"Bearer {token}");
+            var operation = request.SendWebRequest();
+            while (!operation.isDone) {
+                await AsyncUtils.Yield();
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            if (request.result != UnityWebRequest.Result.Success)
+                return null;
+
+            var json = request.downloadHandler.text;
+            // The JSON structure contains "productPublisher" : { "name" : "Publisher Name" }
+            var pattern = "\"productPublisher\"\\s*:\\s*{[^}]*\"name\"\\s*:\\s*\"([^\"]*)\"";
+            var match = Regex.Match(json, pattern);
+            return match.Success ? match.Groups[1].Value.Trim() : null;
         }
 
         static string GetStringValue(string json, string key, bool isString = true) {

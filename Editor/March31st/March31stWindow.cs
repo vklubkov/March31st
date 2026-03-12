@@ -29,6 +29,11 @@ namespace March31st {
         Label _statusLabel;
         MultiColumnListView _listView;
 
+        bool _savePdfToCsv;
+        bool _savePurchasesToCsv;
+        bool _saveResultsToCsv;
+        bool _fetchPublishers;
+
         [MenuItem("Tools/March 31st...")]
         public static void ShowWindow() => GetWindow<March31stWindow>("March 31st");
 
@@ -70,13 +75,12 @@ namespace March31st {
             });
 
             browseButton.text = "...";
+            browseButton.style.marginLeft = 0;
+            browseButton.style.marginRight = 0;
             pdfPathContainer.Add(browseButton);
             rootPanel.Add(pdfPathContainer);
 
-            _approximateToggle = new Toggle(
-                "Enable Approximate Comparison " +
-                "(takes longer and can give false positives " +
-                "but won't miss when few letters are mismatched)");
+            _approximateToggle = new Toggle("Enable Approximate Comparison (used only when no package ids provided)");
             _approximateToggle.value = SessionState.GetBool("March31st_ApproximateComparison", false);
             _approximateToggle.style.marginBottom = 5;
             _approximateToggle.labelElement.style.minWidth = 150;
@@ -91,9 +95,37 @@ namespace March31st {
             _approximateThresholdSlider.RegisterValueChangedCallback(evt =>
                 SessionState.SetInt("March31st_ApproximateThreshold", evt.newValue));
             rootPanel.Add(_approximateThresholdSlider);
+            var checkboxRow = new VisualElement();
+            checkboxRow.style.flexDirection = FlexDirection.Row;
+            checkboxRow.style.marginBottom = 5;
+
+            var pdfCsvToggle = new Toggle("Save parsed PDF to CSV");
+            pdfCsvToggle.value = _savePdfToCsv;
+            pdfCsvToggle.RegisterValueChangedCallback(evt => _savePdfToCsv = evt.newValue);
+            checkboxRow.Add(pdfCsvToggle);
+
+            var purchasesCsvToggle = new Toggle("Save parsed purchases to CSV");
+            purchasesCsvToggle.value = _savePurchasesToCsv;
+            purchasesCsvToggle.RegisterValueChangedCallback(evt => _savePurchasesToCsv = evt.newValue);
+            checkboxRow.Add(purchasesCsvToggle);
+
+            var resultsCsvToggle = new Toggle("Save matched results to CSV");
+            resultsCsvToggle.value = _saveResultsToCsv;
+            resultsCsvToggle.RegisterValueChangedCallback(evt => _saveResultsToCsv = evt.newValue);
+            checkboxRow.Add(resultsCsvToggle);
+
+            rootPanel.Add(checkboxRow);
+
+            var fetchPublishersToggle = new Toggle("Fetching publisher names from Asset Store");
+            fetchPublishersToggle.value = _fetchPublishers;
+            fetchPublishersToggle.style.marginBottom = 5;
+            fetchPublishersToggle.RegisterValueChangedCallback(evt => _fetchPublishers = evt.newValue);
+            rootPanel.Add(fetchPublishersToggle);
 
             _loadButton = new Button(RunCheck);
             _loadButton.style.height = 30;
+            _loadButton.style.marginLeft = 0;
+            _loadButton.style.marginRight = 0;
             _loadButton.text = "Parse PDF, fetch Purchases, and compare";
             rootPanel.Add(_loadButton);
 
@@ -122,8 +154,21 @@ namespace March31st {
             columns.Add(new Column {
                 name = "Asset Name",
                 title = "Asset Name",
-                makeCell = () => new Label(),
-                bindCell = (element, index) => ((Label)element).text = _matchedAssets[index]._name,
+                makeCell = () => {
+                    var tf = new TextField();
+                    tf.isReadOnly = true;
+                    tf.style.backgroundColor = Color.clear;
+                    tf.style.borderBottomWidth = 0;
+                    tf.style.borderTopWidth = 0;
+                    tf.style.borderLeftWidth = 0;
+                    tf.style.borderRightWidth = 0;
+                    tf.style.marginTop = 0;
+                    tf.style.marginBottom = 0;
+                    tf.style.marginLeft = 0;
+                    tf.style.marginRight = 0;
+                    return tf;
+                },
+                bindCell = (element, index) => ((TextField)element).value = _matchedAssets[index]._name,
                 width = 250,
                 stretchable = true,
                 sortable = true
@@ -132,8 +177,44 @@ namespace March31st {
             columns.Add(new Column {
                 name = "Publisher",
                 title = "Publisher",
-                makeCell = () => new Label(),
-                bindCell = (element, index) => ((Label)element).text = _matchedAssets[index]._sanitizedPublisher,
+                makeCell = () => {
+                    var tf = new TextField();
+                    tf.isReadOnly = true;
+                    tf.style.backgroundColor = Color.clear;
+                    tf.style.borderBottomWidth = 0;
+                    tf.style.borderTopWidth = 0;
+                    tf.style.borderLeftWidth = 0;
+                    tf.style.borderRightWidth = 0;
+                    tf.style.marginTop = 0;
+                    tf.style.marginBottom = 0;
+                    tf.style.marginLeft = 0;
+                    tf.style.marginRight = 0;
+                    return tf;
+                },
+                bindCell = (element, index) => ((TextField)element).value = _matchedAssets[index]._sanitizedPublisher,
+                width = 200,
+                stretchable = true,
+                sortable = true
+            });
+
+            columns.Add(new Column {
+                name = "Package ID",
+                title = "Package ID",
+                makeCell = () => {
+                    var tf = new TextField();
+                    tf.isReadOnly = true;
+                    tf.style.backgroundColor = Color.clear;
+                    tf.style.borderBottomWidth = 0;
+                    tf.style.borderTopWidth = 0;
+                    tf.style.borderLeftWidth = 0;
+                    tf.style.borderRightWidth = 0;
+                    tf.style.marginTop = 0;
+                    tf.style.marginBottom = 0;
+                    tf.style.marginLeft = 0;
+                    tf.style.marginRight = 0;
+                    return tf;
+                },
+                bindCell = (element, index) => ((TextField)element).value = _matchedAssets[index]._packageId,
                 width = 200,
                 stretchable = true,
                 sortable = true
@@ -156,6 +237,13 @@ namespace March31st {
                         _matchedAssets.Sort((a, b) => string.Compare(a._sanitizedPublisher, b._sanitizedPublisher, StringComparison.OrdinalIgnoreCase));
                     else
                         _matchedAssets.Sort((a, b) => string.Compare(b._sanitizedPublisher, a._sanitizedPublisher, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (sortedColumn.columnName == "Package ID") {
+                    if (ascending)
+                        _matchedAssets.Sort((a, b) => int.Parse(a._packageId).CompareTo(int.Parse(b._packageId)));
+                    else
+                        _matchedAssets.Sort((a, b) => int.Parse(b._packageId).CompareTo(int.Parse(a._packageId)));
                 }
 
                 if (sortedColumn.columnName == "Purchased within last 6 month") {
@@ -239,6 +327,8 @@ namespace March31st {
             _installButton = new Button(Install);
             _installButton.text = "Install NuGetForUnity, Tabula, UglyToad.PdfPig and Microsoft.Bcl.HashCode";
             _installButton.style.height = 30;
+            _installButton.style.marginLeft = 0;
+            _installButton.style.marginRight = 0;
             rootPanel.Add(_installButton);
 #endif
         }
@@ -250,9 +340,11 @@ namespace March31st {
         }
 
         void OnDisable() {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
-            _cancellationTokenSource = null;
+            if (_cancellationTokenSource != null) {
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
+                _cancellationTokenSource = null;
+            }
         }
 
         void UpdateStatus(string status) {
@@ -265,21 +357,51 @@ namespace March31st {
 
         async void RunCheck() {
             try {
+                if (_cancellationTokenSource != null) {
+                    _cancellationTokenSource.Cancel();
+                    _cancellationTokenSource.Dispose();
+                }
+                _cancellationTokenSource = new CancellationTokenSource();
+                var cancellationToken = _cancellationTokenSource.Token;
+
                 _loadButton.SetEnabled(false);
                 UpdateStatus("Reading PDF...");
 
 #if MARCH31ST_TABULA_AVAILABLE
-                _pdfAssets = await PdfParser.LoadPdfContentsAsync(_pdfPathField.value, _cancellationTokenSource.Token);
+                _pdfAssets = await PdfParser.LoadPdfContentsAsync(_pdfPathField.value, cancellationToken);
                 UpdateStatus($"PDF read. Found {_pdfAssets.Count} entries. Fetching my assets...");
 
+                if (_savePdfToCsv)
+                    SaveToCsv(Path.Combine(Application.dataPath, "Pdf.csv"), _pdfAssets);
+
                 if (_pdfAssets.Count != 0) {
-                    _myAssets = await PurchasesFetcher.FetchMyAssets(_cancellationTokenSource.Token, UpdateStatus);
+                    _myAssets = await PurchasesFetcher.FetchMyAssets(cancellationToken, UpdateStatus);
                     UpdateStatus($"My assets fetched ({_myAssets.Count}). Comparing...");
+
+                    if (_savePurchasesToCsv)
+                        SaveToCsv(Path.Combine(Application.dataPath, "Purchases.csv"), _myAssets);
 
                     await CompareAssets(
                         _approximateToggle.value,
                         _approximateThresholdSlider.value,
-                        _cancellationTokenSource.Token);
+                        cancellationToken);
+
+                    var matchedAssetsCopy = _matchedAssets.ToList();
+                    if (_fetchPublishers) {
+                        _loadButton.SetEnabled(true);
+                        UpdateStatus("Fetching publisher names...");
+                        foreach (var asset in matchedAssetsCopy) {
+                            cancellationToken.ThrowIfCancellationRequested();
+                            var result = await PurchasesFetcher.FetchPublisher(asset._packageId, cancellationToken);
+                            if (!string.IsNullOrEmpty(result))
+                                asset._sanitizedPublisher = result;
+
+                            _listView.RefreshItems();
+                        }
+                    }
+
+                    if (_saveResultsToCsv)
+                        SaveToCsv(Path.Combine(Application.dataPath, "Results.csv"), matchedAssetsCopy);
                 }
 #endif
 
@@ -289,6 +411,7 @@ namespace March31st {
             }
             catch (OperationCanceledException) {
                 await Awaitable.MainThreadAsync();
+                UpdateStatus("Cancelled.");
             }
             catch (Exception e) {
                 UpdateStatus($"Error: {e.Message}");
@@ -316,32 +439,38 @@ namespace March31st {
         }
 
         async Awaitable CompareAssets(bool approximateEnabled,
-                                      int approxiamteStrength,
+                                      int approximateThreshold,
                                       CancellationToken cancellationToken) {
             await Awaitable.BackgroundThreadAsync();
 
             _matchedAssets.Clear();
             foreach (var pdfAsset in _pdfAssets) {
                 cancellationToken.ThrowIfCancellationRequested();
-                AssetInfo match = null;
-                foreach (var myAsset in _myAssets) {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var result = myAsset._sanitizedName.Equals(pdfAsset._sanitizedName);
-                    if (!result && approximateEnabled) {
-                        result = LevenshteinDistance.GetSimilarity(
-                            myAsset._sanitizedName, pdfAsset._sanitizedName) > approxiamteStrength;
-                    }
 
-                    if (result) {
-                        match = myAsset;
-                        break;
+                AssetInfo match = null;
+                if (string.IsNullOrEmpty(pdfAsset._packageId)) {
+                    foreach (var myAsset in _myAssets) {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var result = myAsset._sanitizedName.Equals(pdfAsset._sanitizedName);
+                        if (!result && approximateEnabled) {
+                            result = LevenshteinDistance.GetSimilarity(
+                                myAsset._sanitizedName, pdfAsset._sanitizedName) > approximateThreshold;
+                        }
+
+                        if (result) {
+                            match = myAsset;
+                            break;
+                        }
                     }
+                }
+                else {
+                    match = _myAssets.FirstOrDefault(a =>
+                        a._packageId.Equals(pdfAsset._packageId, StringComparison.OrdinalIgnoreCase));
                 }
 
                 if (match == null)
                     continue;
 
-                // Getting publisher from PDF to avoid downloading product pages from Asset Store
                 match._sanitizedPublisher = pdfAsset._sanitizedPublisher;
                 _matchedAssets.Add(match);
             }
@@ -381,6 +510,40 @@ namespace March31st {
                 var maxLength = Math.Max(s1.Length, s2.Length);
                 return ((double)(maxLength - distance) / maxLength) * 100;
             }
+        }
+
+        static void SaveToCsv(string filePath, List<AssetInfo> assets) {
+            try {
+                using var writer = new StreamWriter(filePath);
+                writer.WriteLine("Name,Publisher,Asset ID,Clock Icon,Asset Link");
+
+                foreach (var asset in assets) {
+                    var clockIcon = "";
+                    if (!string.IsNullOrEmpty(asset._purchaseDate) && 
+                        DateTime.TryParse(asset._purchaseDate, out var date) && 
+                        date >= DateTime.Now.AddMonths(-6)) {
+                        clockIcon = "\u231A";
+                    }
+
+                    var name = EscapeCsv(asset._name);
+                    var publisher = EscapeCsv(asset._sanitizedPublisher);
+                    var packageId = EscapeCsv(asset._packageId);
+                    var link = EscapeCsv(asset._link);
+
+                    writer.WriteLine($"{name},{publisher},{packageId},{clockIcon},{link}");
+                }
+            }
+            catch (Exception e) {
+                Debug.LogError($"Failed to save CSV to {filePath}: {e.Message}");
+            }
+        }
+
+        static string EscapeCsv(string value) {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r")) {
+                return "\"" + value.Replace("\"", "\"\"") + "\"";
+            }
+            return value;
         }
     }
 }

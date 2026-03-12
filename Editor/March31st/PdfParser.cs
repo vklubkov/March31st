@@ -22,7 +22,7 @@ namespace March31st {
             return list;
         }
 
-        private static List<AssetInfo> LoadPdfContents(string pdfPath) {
+        static List<AssetInfo> LoadPdfContents(string pdfPath) {
             var list = new List<AssetInfo>();
             using var document = PdfDocument.Open(pdfPath, new ParsingOptions { ClipPaths = true });
             for (var i = 1; i <= document.NumberOfPages; i++) {
@@ -33,17 +33,18 @@ namespace March31st {
                 var rows = table.Rows;
                 foreach (var row in rows) {
                     var cellsInRow = row.Count;
-                    if (cellsInRow != 2)
-                        continue;
+                    if (cellsInRow == 2)
+                        AddInfo(list, row[0].GetText(), null, row[1].GetText());
 
-                    AddInfo(list, row[0].GetText(), row[1].GetText());
+                    if (cellsInRow == 3)
+                        AddInfo(list, row[0].GetText(), row[1].GetText(), row[2].GetText());
                 }
             }
 
             return list;
         }
 
-        static void AddInfo(List<AssetInfo> list, string name, string publisher) {
+        static void AddInfo(List<AssetInfo> list, string name, string packageId, string publisher) {
             if (name == null || publisher == null)
                 return;
 
@@ -71,6 +72,7 @@ namespace March31st {
                 .Replace(",", "");
 
             list.Add(new AssetInfo {
+                _packageId = packageId,
                 _name = sanitizedName,
                 _sanitizedName = sanitizedName,
                 _sanitizedPublisher = sanitizedPublisher

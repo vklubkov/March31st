@@ -3,6 +3,7 @@ using System;
 namespace March31st {
     [Serializable]
     public class AssetInfo {
+        public string _packageId;
         public string _name;
         public string _sanitizedName;
         public string _sanitizedPublisher;
